@@ -4,7 +4,7 @@
 
 ## デモ
 
-**https://code4fukui.github.io/drumroll/**
+**https://github.com/code4fukui/drumroll
 
 ## 特徴
 

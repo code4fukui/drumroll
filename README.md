@@ -6,7 +6,7 @@ A minimal web application that plays a drum roll sound effect at the tap of a bu
 
 ## Demo
 
-**https://code4fukui.github.io/drumroll/**
+**https://github.com/code4fukui/drumroll
 
 ## Features
 
