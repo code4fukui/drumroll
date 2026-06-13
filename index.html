@@ -1,25 +1,181 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
-<title>ドラムロール</title>
+<title>ドラムロール＆表彰曲</title>
 </head><body>
-<button id="btn" class="btn">タップでドラムロール</button>
+<h1>ドラムロール＆表彰曲</h1>
+<button id="btn" class="btn">再生</button>
+<div class="controls">
+  <label class="volume-control" for="master-volume">
+    <span>マスター</span>
+    <input id="master-volume" data-volume="master" type="range" min="0" max="100" value="100">
+    <output for="master-volume">100%</output>
+  </label>
+  <label class="volume-control" for="drumroll-volume">
+    <span>ドラムロール</span>
+    <input id="drumroll-volume" data-volume="drumroll" type="range" min="0" max="100" value="100">
+    <output for="drumroll-volume">100%</output>
+  </label>
+  <label class="volume-control" for="music-volume">
+    <span>表彰曲</span>
+    <input id="music-volume" data-volume="music" type="range" min="0" max="100" value="100">
+    <output for="music-volume">100%</output>
+  </label>
+  <label class="award-control">
+    <input id="play-drumroll" type="checkbox" checked>
+    ドラムロールを再生する
+  </label>
+  <label class="award-control">
+    <input id="play-award" type="checkbox" checked>
+    表彰曲を再生する
+  </label>
+</div>
 
 <div class="note">
+  Music: <a id="song-link" href="https://code4fukui.github.io/music-awardcelemony/" target="_blank" rel="noopener">表彰曲リスト</a> / <a href="https://github.com/code4fukui/music-awardcelemony" target="_blank" rel="noopener">GitHub</a><br>
+  Music License: <a href="https://github.com/code4fukui/music-awardcelemony/blob/main/LICENSE" target="_blank" rel="noopener">Music Reuse License 1.0 - No AI Training</a>, Copyright (c) 2026 fukuno<br>
   Sound: <a href="https://freesound.org/people/MissloonerVoiceOver255/sounds/569113/" target="_blank" rel="noopener">Freesound - Long Snare Drum Roll with Cymbal Crash.mp3 by MissloonerVoiceOver255</a><br>
-  App: <a href=https://github.com/code4fukui/drumroll/>src on GitHub</a><br>
+  App: <a href="https://github.com/code4fukui/drumroll/">src on GitHub</a> / <a href="https://github.com/code4fukui/drumroll/blob/main/LICENSE">MIT License</a><br>
 </div>
 
 <script type="module">
+const PLAYLIST_URL = "https://code4fukui.github.io/music-awardcelemony/playlist.json";
+const DRUMROLL_URL = "569113__missloonervoiceover255__long-snare-drum-roll-with-cymbal-crash.mp3";
+const FADE_DURATION = 3000;
+
+const btn = document.querySelector("#btn");
+const volumeSliders = document.querySelectorAll("[data-volume]");
+const playDrumroll = document.querySelector("#play-drumroll");
+const playAward = document.querySelector("#play-award");
+const songLink = document.querySelector("#song-link");
 const audio = new Audio();
-audio.src = "569113__missloonervoiceover255__long-snare-drum-roll-with-cymbal-crash.mp3";
+let state = "idle";
+let playbackId = 0;
+let playlistPromise;
+const volumes = {
+  master: 1,
+  drumroll: 1,
+  music: 1,
+};
+
+const getVolume = () => {
+  const sourceVolume = state === "music" ? volumes.music : volumes.drumroll;
+  return volumes.master * sourceVolume;
+};
+
+const loadSongs = async () => {
+  const res = await fetch(PLAYLIST_URL);
+  if (!res.ok) throw new Error(`Playlist request failed: ${res.status}`);
+
+  const playlist = await res.json();
+  return playlist.playlist_clips
+    .map((item) => item.clip)
+    .filter((clip) => clip.status === "complete" && clip.audio_url?.endsWith(".mp3"));
+};
+
+const reset = () => {
+  audio.pause();
+  audio.currentTime = 0;
+  audio.volume = volumes.master;
+  state = "idle";
+  btn.textContent = "再生";
+  songLink.href = "https://code4fukui.github.io/music-awardcelemony/";
+  songLink.textContent = "表彰曲リスト";
+};
+
+const playAwardMusic = async (id) => {
+  try {
+    playlistPromise ??= loadSongs();
+    const songs = await playlistPromise;
+    if (id !== playbackId || state !== "drumroll") return;
+    if (!songs.length) throw new Error("No playable songs found");
+
+    const song = songs[Math.floor(Math.random() * songs.length)];
+    const songUrl = new URL(song.audio_url, PLAYLIST_URL).href;
+    audio.src = songUrl;
+    state = "music";
+    audio.volume = getVolume();
+    btn.textContent = "停止";
+    songLink.href = songUrl;
+    songLink.textContent = `${song.title} を開く`;
+    await audio.play();
+  } catch (err) {
+    console.error(err);
+    if (id === playbackId) reset();
+  }
+};
+
+const start = async () => {
+  const id = ++playbackId;
+  state = "drumroll";
+  playlistPromise = playAward.checked
+    ? loadSongs().catch((err) => {
+      console.error(err);
+      return [];
+    })
+    : undefined;
+
+  if (!playDrumroll.checked) {
+    if (playAward.checked) {
+      btn.textContent = "停止";
+      playAwardMusic(id);
+    } else {
+      reset();
+    }
+    return;
+  }
+
+  btn.textContent = "停止";
+  audio.src = DRUMROLL_URL;
+  audio.volume = getVolume();
+  audio.currentTime = 0;
+
+  try {
+    await audio.play();
+  } catch (err) {
+    console.error(err);
+    if (id === playbackId) reset();
+  }
+};
+
+const fadeOut = () => {
+  state = "fading";
+  ++playbackId;
+  btn.textContent = "停止";
+  const startedAt = performance.now();
+  const startVolume = audio.volume;
+
+  const fade = (now) => {
+    const progress = Math.min((now - startedAt) / FADE_DURATION, 1);
+    audio.volume = startVolume * (1 - progress);
+    if (progress < 1 && state === "fading") {
+      requestAnimationFrame(fade);
+    } else if (state === "fading") {
+      reset();
+    }
+  };
+  requestAnimationFrame(fade);
+};
+
+audio.addEventListener("ended", () => {
+  if (state === "drumroll" && playAward.checked) {
+    playAwardMusic(playbackId);
+  } else if (state === "drumroll" || state === "music") {
+    reset();
+  }
+});
+
+volumeSliders.forEach((slider) => {
+  slider.addEventListener("input", () => {
+    volumes[slider.dataset.volume] = Number(slider.value) / 100;
+    slider.nextElementSibling.value = `${slider.value}%`;
+    if (state !== "fading") audio.volume = getVolume();
+  });
+});
+
 btn.onclick = () => {
-  if (!audio.paused) {
-    // 再生中なら停止
-    audio.pause();
-    audio.currentTime = 0; // 頭に戻す
-  } else {
-    // 停止中なら最初から再生
-    audio.currentTime = 0;
-    audio.play();
+  if (state === "idle") {
+    start();
+  } else if (state !== "fading") {
+    fadeOut();
   }
 };
 </script>
@@ -87,6 +243,45 @@ btn.onclick = () => {
   .btn:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 4px;
+  }
+
+  .controls {
+    width: 100%;
+    max-width: 360px;
+    margin-top: 24px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .volume-control {
+    display: grid;
+    grid-template-columns: 7em 1fr 3.5em;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .volume-control input {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+
+  .volume-control output {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .award-control {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .award-control input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent);
   }
 
   .note {
