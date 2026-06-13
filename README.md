@@ -1,20 +1,31 @@
-# ドラムロール＆表彰曲
+# drumroll
 
-## [アプリを開く](https://code4fukui.github.io/drumroll/)
+> 日本語のREADMEはこちらです: [README.ja.md](README.ja.md)
 
-GitHub Pagesで公開中です。
+A minimal web application that plays a drum roll sound effect at the tap of a button.
 
-ドラムロールの後に、表彰曲リストからランダムに1曲を再生するWebアプリです。
+## Demo
 
-## 使い方
+**https://github.com/code4fukui/drumroll
 
-- 「再生」を押すとドラムロールを開始し、その終了後に表彰曲を再生します。
-- 「停止」を押すと約3秒かけてフェードアウトします。
-- マスター、ドラムロール、表彰曲の音量を個別に調整できます。
-- チェックボックスでドラムロールと表彰曲をそれぞれ有効・無効にできます。
+## Features
 
-## ライセンス
+-   **Simple Interface**: A single, large button to play and stop the sound.
+-   **Responsive Design**: A clean, dark-themed layout that works on any screen size.
+-   **Lightweight**: A self-contained application with no external libraries, written in plain HTML, CSS, and JavaScript.
 
-このアプリのソースコードは [MIT License](LICENSE) で公開しています。
+## Usage
 
-表彰曲には別のライセンスが適用されます。詳細は [music-awardcelemonyのライセンス](https://github.com/code4fukui/music-awardcelemony/blob/main/LICENSE) を確認してください。
+1.  Open the [demo link](https://code4fukui.github.io/drumroll/) in your web browser.
+2.  Tap the button to play the drum roll.
+3.  Tap the button again to stop the sound.
+
+## Credits
+
+This project uses a free sound effect from Freesound.org:
+
+-   **Sound:** [Long Snare Drum Roll with Cymbal Crash.mp3](https://freesound.org/people/MissloonerVoiceOver255/sounds/569113/) by MissloonerVoiceOver255
+
+## License
+
+This project is available under the [MIT License](LICENSE).
