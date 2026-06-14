@@ -50,6 +50,7 @@ const audio = new Audio();
 let state = "idle";
 let playbackId = 0;
 let playlistPromise;
+let songIndex = -1;
 const volumes = {
   master: 1,
   drumroll: 1,
@@ -85,10 +86,13 @@ const playAwardMusic = async (id) => {
   try {
     playlistPromise ??= loadSongs();
     const songs = await playlistPromise;
-    if (id !== playbackId || state !== "drumroll") return;
+    if (id !== playbackId || !["drumroll", "music"].includes(state)) return;
     if (!songs.length) throw new Error("No playable songs found");
 
-    const song = songs[Math.floor(Math.random() * songs.length)];
+    songIndex = songIndex < 0
+      ? Math.floor(Math.random() * songs.length)
+      : (songIndex + 1) % songs.length;
+    const song = songs[songIndex];
     const songUrl = new URL(song.audio_url, PLAYLIST_URL).href;
     audio.src = songUrl;
     state = "music";
@@ -106,6 +110,7 @@ const playAwardMusic = async (id) => {
 const start = async () => {
   const id = ++playbackId;
   state = "drumroll";
+  songIndex = -1;
   playlistPromise = playAward.checked
     ? loadSongs().catch((err) => {
       console.error(err);
@@ -157,6 +162,8 @@ const fadeOut = () => {
 
 audio.addEventListener("ended", () => {
   if (state === "drumroll" && playAward.checked) {
+    playAwardMusic(playbackId);
+  } else if (state === "music" && playAward.checked) {
     playAwardMusic(playbackId);
   } else if (state === "drumroll" || state === "music") {
     reset();
